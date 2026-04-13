@@ -8,6 +8,7 @@ from datetime import datetime
 from data.fetcher import fetch_all
 from signals.engine import compute_signals
 from alerts.telegram_bot import send_summary
+from tickers import WATCHLIST
 
 logging.basicConfig(
     filename="logs/pipeline.log",
@@ -17,21 +18,12 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
-TICKERS = [
-    "ES3.SI",   # STI ETF
-    "D05.SI",   # DBS
-    "O39.SI",   # OCBC
-    "U11.SI",   # UOB
-    # Add more SGX (.SI) or US tickers here
-]
-
-
 def run():
     log.info("=== Pipeline started ===")
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Fetching data...")
 
     # 1. Fetch & store
-    data = fetch_all(TICKERS)
+    data = fetch_all(WATCHLIST)
 
     # 2. Compute signals
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Computing signals...")
