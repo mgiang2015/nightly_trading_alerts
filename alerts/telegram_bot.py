@@ -5,12 +5,15 @@ Uses the simplest possible approach: a single synchronous Bot.send_message()
 call. No webhook, no async server, no polling loop needed.
 """
 
+import os
 import logging
 from datetime import datetime
 import telegram
-from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
 
 log = logging.getLogger(__name__)
+
+TELEGRAM_TOKEN   = os.environ.get("TELEGRAM_TOKEN", "")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 
 SIGNAL_EMOJI = {
     "BUY":   "🟢",
@@ -68,7 +71,7 @@ def _format_message(signals: list[dict]) -> str:
 
 def send_summary(signals: list[dict]):
     """Send the formatted signal summary to your Telegram chat."""
-    if not TELEGRAM_TOKEN or TELEGRAM_TOKEN == "YOUR_BOT_TOKEN_HERE":
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
         print("  ⚠️  Telegram not configured — printing report to stdout instead:\n")
         plain = _format_message(signals)
         for ch in r"*_`\\":

@@ -1,2 +1,5 @@
+.env
+data/prices.db
 logs/
 __pycache__/
+*.pyc
