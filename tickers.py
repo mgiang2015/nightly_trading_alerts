@@ -1,10 +1,11 @@
-# tickers.py — Watchlist of tickers to analyse each night.
-# SGX tickers use the .SI suffix. US tickers use plain symbols (AAPL, SPY, etc.)
+# tickers.py — Loads watchlist from the WATCHLIST environment variable.
+# Set in .env as a comma-separated string, e.g.:
+#   WATCHLIST=ES3.SI,D05.SI,O39.SI,U11.SI
 
-WATCHLIST = [
-    "ES3.SI",   # STI ETF
-    "D05.SI",   # DBS
-    "O39.SI",   # OCBC
-    "U11.SI",   # UOB
-    # Add more tickers here
-]
+import os
+
+_raw = os.environ.get("WATCHLIST", "")
+if not _raw:
+    raise EnvironmentError("WATCHLIST environment variable is not set. Add it to your .env file.")
+
+WATCHLIST = [t.strip() for t in _raw.split(",") if t.strip()]
