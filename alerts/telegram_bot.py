@@ -1,11 +1,12 @@
 """
 alerts/telegram_bot.py — Send the nightly signal summary via Telegram.
 
-Uses the simplest possible approach: a single synchronous Bot.send_message()
-call. No webhook, no async server, no polling loop needed.
+python-telegram-bot v20+ is fully async. We wrap the send call in
+asyncio.run() so the rest of the pipeline stays synchronous.
 """
 
 import os
+import asyncio
 import logging
 from datetime import datetime
 import telegram
@@ -68,6 +69,18 @@ def _format_message(signals: list[dict]) -> str:
     lines.append("_EMA 20/50 crossover strategy_")
     return "\n".join(lines)
 
+async def _send(signals: list[dict]):
+        bot = telegram.Bot(token=TELEGRAM_TOKEN)
+        msg = _format_message(signals)
+
+        # Telegram's API has a 4096 character limit per message, chunking is to avoid hitting that ceiling in case we have too many tickers
+        for chunk in [msg[i:i+4000] for i in range(0, len(msg), 4000)]:
+            await bot.send_message(
+                chat_id=TELEGRAM_CHAT_ID,
+                text=chunk,
+                parse_mode="MarkdownV2",
+            )
+
 
 def send_summary(signals: list[dict]):
     """Send the formatted signal summary to your Telegram chat."""
@@ -80,14 +93,7 @@ def send_summary(signals: list[dict]):
         return
 
     try:
-        bot = telegram.Bot(token=TELEGRAM_TOKEN)
-        msg = _format_message(signals)
-        for chunk in [msg[i:i+4000] for i in range(0, len(msg), 4000)]:
-            bot.send_message(
-                chat_id=TELEGRAM_CHAT_ID,
-                text=chunk,
-                parse_mode="MarkdownV2",
-            )
+        asyncio.run(_send(signals=signals))
         log.info("Telegram message sent")
         print("  ✓ Telegram alert sent")
     except Exception as e:
