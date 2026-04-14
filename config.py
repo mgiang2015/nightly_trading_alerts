@@ -9,10 +9,8 @@
 TELEGRAM_TOKEN = "YOUR_BOT_TOKEN_HERE"
 TELEGRAM_CHAT_ID = "YOUR_CHAT_ID_HERE"
 
-# ── Data settings ─────────────────────────────────────────────────────────────
-# How many calendar days of history to fetch for indicator calculation
-LOOKBACK_DAYS = 90
-
 # ── Signal settings ───────────────────────────────────────────────────────────
-EMA_FAST = 20   # Fast EMA period
-EMA_SLOW = 50   # Slow EMA period
+# Periods refer to 30m candles, not days.
+# e.g. EMA_FAST=20 = 20 × 30m bars = 10 hours of trading time
+EMA_FAST = 20
+EMA_SLOW = 50
