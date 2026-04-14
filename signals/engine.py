@@ -144,7 +144,7 @@ class VolumeBreakoutStrategy(BaseStrategy):
         recent_low    = ref["low"].min()
         avg_volume    = ref["volume"].mean()
         vol_ratio     = curr["volume"] / avg_volume if avg_volume > 0 else 0
-        volume_confirmed = vol_ratio >= self.vol_mult
+        volume_confirmed = bool(vol_ratio >= self.vol_mult)
 
         close = curr["close"]
         date  = df.index[-1]

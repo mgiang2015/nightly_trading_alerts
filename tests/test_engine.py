@@ -99,14 +99,14 @@ class TestComputeSignals:
             "AAA": make_ohlcv([100.0] * 30),
             "BBB": make_ohlcv([200.0] * 30),
         }
-        results = compute_signals(data, strategy=EMACrossStrategy(fast=FAST, slow=SLOW))
+        results, _ = compute_signals(data, strategy=EMACrossStrategy(fast=FAST, slow=SLOW))
         assert len(results) == 2
         tickers = {r["ticker"] for r in results}
         assert tickers == {"AAA", "BBB"}
 
     def test_ticker_attached_to_each_result(self):
         data = {"XYZ": make_ohlcv([100.0] * 30)}
-        results = compute_signals(data, strategy=EMACrossStrategy(fast=FAST, slow=SLOW))
+        results, _ = compute_signals(data, strategy=EMACrossStrategy(fast=FAST, slow=SLOW))
         assert results[0]["ticker"] == "XYZ"
 
     def test_buy_sorted_before_hold(self):
@@ -117,7 +117,7 @@ class TestComputeSignals:
             "HOLD_TICKER": make_ohlcv(hold_closes),
             "BUY_TICKER":  make_ohlcv(buy_closes),
         }
-        results = compute_signals(data, strategy=EMACrossStrategy(fast=FAST, slow=SLOW))
+        results, _ = compute_signals(data, strategy=EMACrossStrategy(fast=FAST, slow=SLOW))
         signals = [r["signal"] for r in results]
         if "BUY" in signals and "HOLD" in signals:
             assert signals.index("BUY") < signals.index("HOLD")
@@ -125,19 +125,26 @@ class TestComputeSignals:
     def test_error_ticker_recorded_gracefully(self):
         """A DataFrame with non-numeric close values should produce an ERROR entry."""
         df = make_ohlcv([100.0] * 30)
-        df["close"] = "bad"   # corrupt close column after construction
+        df["close"] = "bad"
         data = {"BAD": df}
-        results = compute_signals(data, strategy=EMACrossStrategy(fast=FAST, slow=SLOW))
+        results, _ = compute_signals(data, strategy=EMACrossStrategy(fast=FAST, slow=SLOW))
         assert len(results) == 1
         assert results[0]["signal"] == "ERROR"
         assert results[0]["ticker"] == "BAD"
 
     def test_empty_data_returns_empty_list(self):
-        results = compute_signals({})
+        results, _ = compute_signals({})
         assert results == []
 
     def test_default_strategy_is_ema_cross(self):
         """compute_signals with no strategy arg should not raise."""
         data = {"T": make_ohlcv([100.0] * 60)}
-        results = compute_signals(data)
+        results, _ = compute_signals(data)
         assert len(results) == 1
+
+    def test_returns_strategy_name(self):
+        """Second element of return tuple should be the strategy display name."""
+        data = {"T": make_ohlcv([100.0] * 30)}
+        _, name = compute_signals(data, strategy=EMACrossStrategy(fast=FAST, slow=SLOW))
+        assert isinstance(name, str)
+        assert len(name) > 0
