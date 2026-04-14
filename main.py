@@ -5,9 +5,9 @@ Run directly or via cron: python main.py
 
 import logging
 from datetime import datetime
-from data.fetcher import fetch_all
-from signals.engine import compute_signals
-from alerts.telegram_bot import send_summary
+from fetcher import fetch_all
+from engine import compute_signals
+from telegram_bot import send_summary
 from tickers import WATCHLIST
 
 logging.basicConfig(
