@@ -5,8 +5,9 @@ Run directly or via cron: python main.py
 
 import logging
 from datetime import datetime
+
 from data.fetcher import fetch_all
-from signals.engine import compute_signals
+from signals.engine import VolumeBreakoutStrategy, compute_signals
 from alerts.telegram_bot import send_summary
 from tickers import WATCHLIST
 
@@ -27,11 +28,11 @@ def run():
 
     # 2. Compute signals
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Computing signals...")
-    signals = compute_signals(data)
+    signals, strategy_name = compute_signals(data, strategy=VolumeBreakoutStrategy())
 
     # 3. Send Telegram alert
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Sending alert...")
-    send_summary(signals)
+    send_summary(signals, strategy_name)
 
     log.info("=== Pipeline complete ===")
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Done.")
