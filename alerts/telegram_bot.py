@@ -26,7 +26,7 @@ SIGNAL_EMOJI = {
 
 def _escape(text: str) -> str:
     """Escape special characters for Telegram MarkdownV2."""
-    for ch in r"\.+-()|{}#!=":
+    for ch in r"\_*[]()~`>#+-=|{}.!":
         text = text.replace(ch, f"\\{ch}")
     return text
 
@@ -55,6 +55,11 @@ def _format_message(signals: list[dict], strategy_name: str) -> str:
             high  = _escape(str(s.get("recent_high", "")))
             low   = _escape(str(s.get("recent_low", "")))
             extra = f"  {vol}  hi={high} lo={low}"
+        # RSI divergence detail
+        elif s.get("rsi") is not None:
+            rsi      = _escape(f"RSI {s['rsi']:.1f}")
+            trend    = "↑" if s.get("ema_rising") else "↓"
+            extra = f"  {rsi}  EMA {trend}"
         else:
             extra = ""
 

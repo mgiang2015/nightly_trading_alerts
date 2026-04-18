@@ -22,6 +22,15 @@ class TestEscape:
     def test_escapes_hyphen(self):
         assert _escape("gap -0.5%") == "gap \\-0\\.5%"
 
+    def test_escapes_equals(self):
+        assert _escape("a=b") == "a\\=b"
+
+    def test_escapes_underscore(self):
+        assert _escape("ema_slow") == "ema\\_slow"
+
+    def test_escapes_asterisk(self):
+        assert _escape("a*b") == "a\\*b"
+
     def test_plain_text_unchanged(self):
         assert _escape("hello world") == "hello world"
 
