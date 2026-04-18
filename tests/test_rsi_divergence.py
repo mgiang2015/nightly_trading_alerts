@@ -109,18 +109,19 @@ class TestRSIDivergenceStrategy:
     # ── Result structure ──────────────────────────────────────────────────────
 
     def test_result_contains_required_keys(self):
-        df = make_doji([100.0] * 80)
+        # Use a gentle uptrend so RSI and EMA are well-defined after dropna
+        df = make_doji(list(range(100, 180)))
         result = self.strategy.compute(df)
         for key in ("signal", "close", "rsi", "ema_slow", "ema_rising", "detail"):
             assert key in result, f"Missing key: {key}"
 
     def test_rsi_is_in_valid_range(self):
-        df = make_doji([100.0] * 80)
+        df = make_doji(list(range(100, 180)))
         result = self.strategy.compute(df)
         assert 0 <= result["rsi"] <= 100
 
     def test_ema_rising_is_bool(self):
-        df = make_doji([100.0] * 80)
+        df = make_doji(list(range(100, 180)))
         result = self.strategy.compute(df)
         assert isinstance(result["ema_rising"], bool)
 

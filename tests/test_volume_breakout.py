@@ -60,7 +60,7 @@ class TestVolumeBreakoutStrategy:
 
     def test_no_buy_when_price_does_not_break_high(self):
         """Volume spike but price stays within range → HOLD."""
-        closes  = [100.0] * WINDOW + [99.0]   # below recent high
+        closes  = [100.0] * WINDOW + [100.0]   # equal to recent high, not above it
         volumes = [1000]  * WINDOW + [3000]
         df = make_ohlcv_with_volume(closes, volumes)
         result = self.strategy.compute(df)
@@ -86,7 +86,7 @@ class TestVolumeBreakoutStrategy:
 
     def test_no_sell_when_price_does_not_break_low(self):
         """Volume spike but price stays within range → HOLD."""
-        closes  = [100.0] * WINDOW + [101.0]
+        closes  = [100.0] * WINDOW + [100.0]   # equal to recent low, not below it
         volumes = [1000]  * WINDOW + [3000]
         df = make_ohlcv_with_volume(closes, volumes)
         result = self.strategy.compute(df)
