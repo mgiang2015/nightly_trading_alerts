@@ -14,7 +14,7 @@ import pytest
 import numpy as np
 import pandas as pd
 from tests.conftest import make_ohlcv
-from signals.engine import RSIDivergenceStrategy
+from signals import RSIDivergenceStrategy
 
 # Small periods so tests need ~60 bars rather than hundreds
 RSI_PERIOD   = 7

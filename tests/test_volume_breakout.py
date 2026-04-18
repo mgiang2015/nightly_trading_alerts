@@ -6,7 +6,7 @@ import pytest
 import pandas as pd
 import numpy as np
 from tests.conftest import make_ohlcv
-from signals.engine import VolumeBreakoutStrategy
+from signals import VolumeBreakoutStrategy
 
 WINDOW   = 5
 VOL_MULT = 1.5
