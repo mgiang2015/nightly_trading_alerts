@@ -7,7 +7,7 @@ import logging
 from datetime import datetime
 
 from data.fetcher import fetch_all
-from signals.engine import RSIDivergenceStrategy, VolumeBreakoutStrategy, compute_signals
+from signals import RSIDivergenceStrategy, compute_signals
 from alerts.telegram_bot import send_summary
 from tickers import WATCHLIST
 
