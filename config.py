@@ -14,3 +14,11 @@ EMA_SLOW = 50
 #                     e.g. 1.5 means volume must be 50% above the recent average
 BREAKOUT_WINDOW    = 20
 VOLUME_MULTIPLIER  = 1.5
+
+# ── RSI divergence settings ───────────────────────────────────────────────────
+# RSI_PERIOD        : RSI calculation period
+# RSI_SWING_WINDOW  : bars to scan left/right when identifying swing points
+# RSI_LOOKBACK      : how far back (in bars) to search for a prior swing point
+RSI_PERIOD       = 14
+RSI_SWING_WINDOW = 3
+RSI_LOOKBACK     = 40
