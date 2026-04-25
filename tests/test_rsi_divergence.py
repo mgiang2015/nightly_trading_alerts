@@ -133,7 +133,7 @@ class TestRSIDivergenceStrategy:
         closes = list(range(100, 180))
         df = make_doji(closes)
         result = self.strategy.compute(df)
-        assert result["ema_rising"] == True
+        assert result["ema_rising"]
 
     def test_ema_falling_on_downtrend(self):
         """A sustained downtrend should produce a non-rising EMA flag."""

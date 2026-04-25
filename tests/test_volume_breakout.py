@@ -124,7 +124,7 @@ class TestVolumeBreakoutStrategy:
         volumes = [1000]  * WINDOW + [2000]
         df = make_ohlcv_with_volume(closes, volumes)
         result = self.strategy.compute(df)
-        assert result["vol_confirmed"] == True
+        assert result["vol_confirmed"]
 
     def test_reference_window_excludes_current_bar(self):
         """
@@ -138,7 +138,7 @@ class TestVolumeBreakoutStrategy:
         volumes = [1000]  * WINDOW + [1600]   # 1.6x of 1000 = confirmed
         df = make_ohlcv_with_volume(closes, volumes)
         result = self.strategy.compute(df)
-        assert result["vol_confirmed"] == True
+        assert result["vol_confirmed"]
 
     def test_custom_window_and_multiplier(self):
         strategy = VolumeBreakoutStrategy(window=3, vol_mult=2.0)
