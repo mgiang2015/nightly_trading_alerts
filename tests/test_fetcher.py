@@ -5,10 +5,9 @@ We test _upsert, _load_from_db, and _migrate using an in-memory DB.
 _fetch_ticker is excluded: it calls yfinance over the network.
 """
 
-import sqlite3
 import pandas as pd
 from tests.conftest import make_ohlcv
-from data.fetcher import _upsert, _load_from_db, _migrate
+from data.fetcher import _upsert, _load_from_db
 
 
 class TestUpsert:
@@ -97,46 +96,3 @@ class TestLoadFromDb:
     def test_empty_result_for_unknown_ticker(self, mem_db):
         df = _load_from_db(mem_db, "UNKNOWN", "30m")
         assert df.empty
-
-
-class TestMigrate:
-
-    def test_migrate_adds_interval_column(self):
-        """A pre-migration DB (no interval column) should be migrated cleanly."""
-        conn = sqlite3.connect(":memory:")
-        # Create old schema without interval column
-        conn.execute("""
-            CREATE TABLE prices (
-                ticker   TEXT,
-                datetime TEXT,
-                open     REAL,
-                high     REAL,
-                low      REAL,
-                close    REAL,
-                volume   INTEGER,
-                PRIMARY KEY (ticker, datetime)
-            )
-        """)
-        conn.execute(
-            "INSERT INTO prices VALUES (?,?,?,?,?,?,?)",
-            ("AAA", "2024-01-01 09:00:00+0800", 1.0, 1.0, 1.0, 1.0, 1000)
-        )
-        conn.commit()
-
-        _migrate(conn)
-
-        cols = [row[1] for row in conn.execute("PRAGMA table_info(prices)")]
-        assert "interval" in cols
-
-        # Existing row should be preserved
-        row = conn.execute("SELECT ticker, close FROM prices").fetchone()
-        assert row[0] == "AAA"
-        assert row[1] == 1.0
-        conn.close()
-
-    def test_migrate_is_idempotent(self, mem_db):
-        """Calling _migrate on an already-migrated DB should not raise or corrupt data."""
-        _upsert(mem_db, "AAA", "30m", make_ohlcv([100.0]))
-        _migrate(mem_db)   # should be a no-op
-        df = _load_from_db(mem_db, "AAA", "30m")
-        assert len(df) == 1

@@ -46,43 +46,6 @@ def _get_conn() -> sqlite3.Connection:
     return conn
 
 
-def _migrate(conn: sqlite3.Connection):
-    """
-    Add the interval column to an existing prices table that was created
-    before this schema update (i.e. without the interval column).
-    Safe to call on already-migrated databases — it is a no-op if the
-    column already exists.
-    """
-    cols = [row[1] for row in conn.execute("PRAGMA table_info(prices)")]
-    if "interval" in cols:
-        return
-
-    log.info("Migrating prices table: adding interval column")
-    conn.execute("ALTER TABLE prices ADD COLUMN interval TEXT DEFAULT '30m'")
-    # Drop old PRIMARY KEY constraint and recreate table with new PK.
-    # SQLite does not support ALTER TABLE ... DROP CONSTRAINT, so we
-    # rebuild the table.
-    conn.executescript("""
-        CREATE TABLE prices_new (
-            ticker    TEXT,
-            interval  TEXT,
-            datetime  TEXT,
-            open      REAL,
-            high      REAL,
-            low       REAL,
-            close     REAL,
-            volume    INTEGER,
-            PRIMARY KEY (ticker, interval, datetime)
-        );
-        INSERT INTO prices_new SELECT ticker, interval, datetime,
-            open, high, low, close, volume FROM prices;
-        DROP TABLE prices;
-        ALTER TABLE prices_new RENAME TO prices;
-    """)
-    conn.commit()
-    log.info("Migration complete")
-
-
 def _fetch_ticker(ticker: str, interval: str) -> pd.DataFrame:
     """Download OHLCV candles for a single ticker at the given interval."""
     cfg = INTERVALS.get(interval)
@@ -144,7 +107,6 @@ def fetch_all(tickers: list[str], interval: str = "30m") -> dict[str, pd.DataFra
         raise ValueError(f"Unsupported interval '{interval}'. Choose from: {list(INTERVALS)}")
 
     conn = _get_conn()
-    _migrate(conn)
 
     result = {}
     for ticker in tickers:
