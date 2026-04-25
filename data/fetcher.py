@@ -121,7 +121,7 @@ def fetch_all(tickers: list[str], interval: str = "30m") -> dict[str, pd.DataFra
     return result
 
 
-def fetch_for_backtest(tickers: list[str], period: str = "5y") -> dict[str, pd.DataFrame]:
+def fetch_for_backtest(tickers: list[str], period: str = "10y") -> dict[str, pd.DataFrame]:
     """
     Fetch daily OHLCV data for backtesting. Not stored in the live DB —
     returned directly so backtests don't pollute the live prices cache.
