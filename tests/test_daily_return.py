@@ -3,11 +3,12 @@ tests/test_daily_return.py — Tests for DailyReturnStrategy and
 cross-sectional routing in compute_signals.
 """
 
-import pytest
-import pandas as pd
 import numpy as np
-from tests.conftest import make_ohlcv
+import pandas as pd
+import pytest
+
 from signals import DailyReturnStrategy, compute_signals
+from tests.conftest import make_ohlcv
 
 
 def make_ticker_data(tickers_returns: dict[str, float]) -> dict[str, pd.DataFrame]:

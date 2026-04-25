@@ -10,11 +10,12 @@ Design notes:
   sustained trend before the divergence setup.
 """
 
-import pytest
 import numpy as np
 import pandas as pd
-from tests.conftest import make_ohlcv
+import pytest
+
 from signals import RSIDivergenceStrategy
+from tests.conftest import make_ohlcv
 
 # Small periods so tests need ~60 bars rather than hundreds
 RSI_PERIOD   = 7

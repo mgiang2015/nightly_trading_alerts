@@ -4,7 +4,8 @@ signals/rsi_divergence.py — RSI divergence with EMA trend filter strategy.
 
 import pandas as pd
 import pandas_ta as ta
-from config import EMA_SLOW, RSI_PERIOD, RSI_SWING_WINDOW, RSI_LOOKBACK
+
+from config import EMA_SLOW, RSI_LOOKBACK, RSI_PERIOD, RSI_SWING_WINDOW
 from signals.base import BaseStrategy
 
 
