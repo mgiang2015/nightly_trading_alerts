@@ -5,11 +5,10 @@ python-telegram-bot v20+ is fully async. We wrap the send call in
 asyncio.run() so the rest of the pipeline stays synchronous.
 """
 
+import os
 import asyncio
 import logging
-import os
 from datetime import datetime
-
 import telegram
 
 log = logging.getLogger(__name__)
@@ -36,9 +35,8 @@ def _format_message(signals: list[dict], strategy_name: str) -> str:
     now = datetime.now().strftime("%d %b %Y, %H:%M SGT")
     lines = ["📊 *Nightly Signal Report*", f"_{_escape(now)}_", ""]
 
-    buy  = [s for s in signals if s["signal"] == "BUY"]
+    buy = [s for s in signals if s["signal"] == "BUY"]
     sell = [s for s in signals if s["signal"] == "SELL"]
-    hold = [s for s in signals if s["signal"] == "HOLD"]
     err  = [s for s in signals if s["signal"] == "ERROR"]
 
     def ticker_line(s: dict) -> str:
@@ -78,10 +76,6 @@ def _format_message(signals: list[dict], strategy_name: str) -> str:
         lines.append("*SELL signals*")
         lines.extend(ticker_line(s) for s in sell)
         lines.append("")
-    if hold:
-        lines.append("*No crossover today*")
-        lines.extend(f"⚪ `{_escape(s['ticker'])}`" for s in hold)
-        lines.append("")
     if err:
         lines.append("*Errors*")
         lines.extend(f"⚠️ `{_escape(s['ticker'])}` — {_escape(s['detail'])}" for s in err)
@@ -92,8 +86,19 @@ def _format_message(signals: list[dict], strategy_name: str) -> str:
     return "\n".join(lines)
 
 
+def _has_actionable_signals(signals: list[dict]) -> bool:
+    """Return True if there is at least one BUY, SELL, or ERROR signal."""
+    return any(s["signal"] in ("BUY", "SELL", "ERROR") for s in signals)
+
+
 def send_summary(signals: list[dict], strategy_name: str):
-    """Send the formatted signal summary to your Telegram chat."""
+    """Send the formatted signal summary to your Telegram chat.
+    Skips sending entirely if there are no actionable signals (all HOLD).
+    """
+    if not _has_actionable_signals(signals):
+        log.info(f"No actionable signals for {strategy_name} — skipping alert")
+        print(f"  — No actionable signals ({strategy_name}), alert skipped")
+        return
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
         print("  ⚠️  Telegram not configured — printing report to stdout instead:\n")
         plain = _format_message(signals, strategy_name)
