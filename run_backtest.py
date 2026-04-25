@@ -31,7 +31,7 @@ STRATEGY = DailyReturnStrategy(top_n=3)
 TICKERS = WATCHLIST
 
 # Data period — "5y" for 5 years, "max" for full history
-PERIOD = "5y"
+PERIOD = "10y"
 
 # Starting capital in SGD
 INITIAL_CAPITAL = 10_000.0
