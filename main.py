@@ -18,7 +18,6 @@ from alerts.telegram_bot import send_summary
 from data.fetcher import fetch_all
 from signals import (
     DailyReturnStrategy,
-    EMACrossStrategy,
     compute_signals,
 )
 from tickers import WATCHLIST
@@ -37,7 +36,6 @@ log = logging.getLogger(__name__)
 #   interval "1d"  → daily candles    (Daily Return, KCP, Williams %R)
 
 STRATEGIES = [
-    (EMACrossStrategy(),    "30m"),
     (DailyReturnStrategy(), "1d"),
 ]
 
