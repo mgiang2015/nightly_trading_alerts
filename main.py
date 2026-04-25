@@ -1,13 +1,25 @@
 """
 main.py — Nightly trading signal pipeline.
 Run directly or via cron: python main.py
+
+Two data intervals are fetched:
+  - 30m : used by intraday strategies (EMA cross, RSI divergence, volume breakout)
+  - 1d  : used by cross-sectional daily strategies (Daily Return, KCP, Williams %R)
+
+Add or swap strategies in the STRATEGIES list below.
+Each entry is (strategy_instance, interval) — the pipeline will automatically
+use the correct dataset for each strategy.
 """
 
 import logging
 from datetime import datetime
 
 from data.fetcher import fetch_all
-from signals import RSIDivergenceStrategy, DailyReturnStrategy, compute_signals
+from signals import (
+    compute_signals,
+    EMACrossStrategy,
+    DailyReturnStrategy,
+)
 from alerts.telegram_bot import send_summary
 from tickers import WATCHLIST
 
@@ -19,20 +31,46 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
+# ── Active strategies ─────────────────────────────────────────────────────────
+# Each entry: (strategy_instance, data_interval)
+#   interval "30m" → intraday candles (EMA cross, RSI divergence, volume breakout)
+#   interval "1d"  → daily candles    (Daily Return, KCP, Williams %R)
+
+STRATEGIES = [
+    (EMACrossStrategy(),    "30m"),
+    (DailyReturnStrategy(), "1d"),
+]
+
+
 def run():
     log.info("=== Pipeline started ===")
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Fetching data...")
 
-    # 1. Fetch & store
-    data = fetch_all(WATCHLIST)
+    # 1. Determine which intervals are needed and fetch once per interval
+    needed_intervals = {interval for _, interval in STRATEGIES}
 
-    # 2. Compute signals
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Computing signals...")
-    signals, strategy_name = compute_signals(data, strategy=DailyReturnStrategy())
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Fetching data "
+          f"({', '.join(sorted(needed_intervals))})...")
 
-    # 3. Send Telegram alert
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Sending alert...")
-    send_summary(signals, strategy_name)
+    data_by_interval: dict[str, dict] = {}
+    for interval in needed_intervals:
+        data_by_interval[interval] = fetch_all(WATCHLIST, interval=interval)
+
+    # 2. Run each strategy against the correct dataset
+    all_results   = []
+    strategy_names = []
+
+    for strategy, interval in STRATEGIES:
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] "
+              f"Computing signals: {strategy.name}...")
+        data = data_by_interval[interval]
+        results, name = compute_signals(data, strategy=strategy)
+        all_results.append((results, name))
+        strategy_names.append(name)
+
+    # 3. Send one Telegram alert per strategy
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Sending alerts...")
+    for results, name in all_results:
+        send_summary(results, name)
 
     log.info("=== Pipeline complete ===")
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Done.")
