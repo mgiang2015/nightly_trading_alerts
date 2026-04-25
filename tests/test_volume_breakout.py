@@ -117,7 +117,7 @@ class TestVolumeBreakoutStrategy:
         volumes = [1000]  * WINDOW + [1100]
         df = make_ohlcv_with_volume(closes, volumes)
         result = self.strategy.compute(df)
-        assert result["vol_confirmed"] == False
+        assert not result["vol_confirmed"]
 
     def test_vol_confirmed_true_when_above_threshold(self):
         closes  = [100.0] * WINDOW + [110.0]

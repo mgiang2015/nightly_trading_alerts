@@ -140,7 +140,7 @@ class TestRSIDivergenceStrategy:
         closes = list(range(180, 100, -1))
         df = make_doji(closes)
         result = self.strategy.compute(df)
-        assert result["ema_rising"] == False
+        assert not result["ema_rising"]
 
     # ── HOLD when trend filter blocks signal ──────────────────────────────────
 
