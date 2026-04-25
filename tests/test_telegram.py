@@ -69,9 +69,11 @@ class TestFormatMessage:
         msg = _format_message([_sell_signal()], self.STRATEGY_NAME)
         assert "SELL signals" in msg
 
-    def test_hold_section_present_when_hold_signal(self):
+    def test_hold_section_absent(self):
+        """HOLD signals should never appear in the message."""
         msg = _format_message([_hold_signal()], self.STRATEGY_NAME)
-        assert "No crossover today" in msg
+        assert "No crossover today" not in msg
+        assert "⚪" not in msg
 
     def test_error_section_present_when_error_signal(self):
         msg = _format_message([_error_signal()], self.STRATEGY_NAME)
@@ -111,4 +113,4 @@ class TestFormatMessage:
         msg = _format_message(signals, self.STRATEGY_NAME)
         assert "AAA" in msg
         assert "BBB" in msg
-        assert "CCC" in msg
+        assert "CCC" not in msg
