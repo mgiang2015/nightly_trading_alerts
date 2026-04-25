@@ -35,13 +35,14 @@ def mem_db():
     conn.execute("""
         CREATE TABLE prices (
             ticker    TEXT,
+            interval  TEXT,
             datetime  TEXT,
             open      REAL,
             high      REAL,
             low       REAL,
             close     REAL,
             volume    INTEGER,
-            PRIMARY KEY (ticker, datetime)
+            PRIMARY KEY (ticker, interval, datetime)
         )
     """)
     conn.commit()
