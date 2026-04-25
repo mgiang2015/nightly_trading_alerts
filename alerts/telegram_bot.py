@@ -57,9 +57,13 @@ def _format_message(signals: list[dict], strategy_name: str) -> str:
             extra = f"  {vol}  hi={high} lo={low}"
         # RSI divergence detail
         elif s.get("rsi") is not None:
-            rsi      = _escape(f"RSI {s['rsi']:.1f}")
-            trend    = "↑" if s.get("ema_rising") else "↓"
+            rsi   = _escape(f"RSI {s['rsi']:.1f}")
+            trend = "↑" if s.get("ema_rising") else "↓"
             extra = f"  {rsi}  EMA {trend}"
+        # Daily return (cross-sectional) detail
+        elif s.get("daily_return") is not None:
+            dr    = _escape(f"DR {s['daily_return']:+.3f}%")
+            extra = f"  {dr}"
         else:
             extra = ""
 

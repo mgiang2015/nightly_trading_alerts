@@ -15,6 +15,11 @@ EMA_SLOW = 50
 BREAKOUT_WINDOW    = 20
 VOLUME_MULTIPLIER  = 1.5
 
+# ── Cross-sectional strategy settings ────────────────────────────────────────
+# CROSS_TOPN : number of top/bottom ranked tickers to flag as BUY/SELL.
+#              e.g. 3 means the 3 most oversold → BUY, 3 most overbought → SELL
+CROSS_TOPN = 3
+
 # ── RSI divergence settings ───────────────────────────────────────────────────
 # RSI_PERIOD        : RSI calculation period
 # RSI_SWING_WINDOW  : bars to scan left/right when identifying swing points

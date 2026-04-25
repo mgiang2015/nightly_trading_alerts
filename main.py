@@ -7,7 +7,7 @@ import logging
 from datetime import datetime
 
 from data.fetcher import fetch_all
-from signals import RSIDivergenceStrategy, compute_signals
+from signals import RSIDivergenceStrategy, DailyReturnStrategy, compute_signals
 from alerts.telegram_bot import send_summary
 from tickers import WATCHLIST
 
@@ -28,7 +28,7 @@ def run():
 
     # 2. Compute signals
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Computing signals...")
-    signals, strategy_name = compute_signals(data, strategy=RSIDivergenceStrategy())
+    signals, strategy_name = compute_signals(data, strategy=DailyReturnStrategy())
 
     # 3. Send Telegram alert
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Sending alert...")
