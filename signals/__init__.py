@@ -8,11 +8,11 @@ Usage:
 """
 
 from signals.base import BaseStrategy
-from signals.ema_cross import EMACrossStrategy
-from signals.volume_breakout import VolumeBreakoutStrategy
-from signals.rsi_divergence import RSIDivergenceStrategy
 from signals.daily_return import DailyReturnStrategy
+from signals.ema_cross import EMACrossStrategy
 from signals.engine import compute_signals
+from signals.rsi_divergence import RSIDivergenceStrategy
+from signals.volume_breakout import VolumeBreakoutStrategy
 
 __all__ = [
     "BaseStrategy",

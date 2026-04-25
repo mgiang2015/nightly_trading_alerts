@@ -7,6 +7,7 @@ than processing each ticker independently like BaseStrategy does.
 """
 
 from abc import ABC, abstractmethod
+
 import pandas as pd
 
 

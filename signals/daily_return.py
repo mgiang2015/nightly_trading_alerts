@@ -18,6 +18,7 @@ stocks to reduce exposure to or avoid, not to short.
 """
 
 import pandas as pd
+
 from config import CROSS_TOPN
 from signals.base_cross import BaseCrossStrategy
 

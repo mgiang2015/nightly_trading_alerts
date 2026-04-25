@@ -2,11 +2,12 @@
 tests/test_volume_breakout.py — Tests for VolumeBreakoutStrategy.
 """
 
-import pytest
-import pandas as pd
 import numpy as np
-from tests.conftest import make_ohlcv
+import pandas as pd
+import pytest
+
 from signals import VolumeBreakoutStrategy
+from tests.conftest import make_ohlcv
 
 WINDOW   = 5
 VOL_MULT = 1.5

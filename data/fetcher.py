@@ -8,12 +8,12 @@ Supports two intervals, stored in separate logical partitions of the same DB:
 Both share the same prices table, keyed by (ticker, interval, datetime).
 """
 
-import sqlite3
 import logging
+import sqlite3
 from pathlib import Path
 
-import yfinance as yf
 import pandas as pd
+import yfinance as yf
 
 log = logging.getLogger(__name__)
 
