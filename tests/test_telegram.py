@@ -6,8 +6,8 @@ mocking asyncio.run + telegram.Bot adds complexity for little confidence gain.
 """
 
 import pytest
-from alerts.telegram_bot import _escape, _format_message
 
+from alerts.telegram_bot import _escape, _format_message
 
 # ── _escape ───────────────────────────────────────────────────────────────────
 

@@ -3,6 +3,7 @@ signals/volume_breakout.py — Volume-confirmed breakout strategy.
 """
 
 import pandas as pd
+
 from config import BREAKOUT_WINDOW, VOLUME_MULTIPLIER
 from signals.base import BaseStrategy
 

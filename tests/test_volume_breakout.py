@@ -2,11 +2,12 @@
 tests/test_volume_breakout.py — Tests for VolumeBreakoutStrategy.
 """
 
-import pytest
-import pandas as pd
 import numpy as np
-from tests.conftest import make_ohlcv
+import pandas as pd
+import pytest
+
 from signals import VolumeBreakoutStrategy
+from tests.conftest import make_ohlcv
 
 WINDOW   = 5
 VOL_MULT = 1.5
@@ -116,14 +117,14 @@ class TestVolumeBreakoutStrategy:
         volumes = [1000]  * WINDOW + [1100]
         df = make_ohlcv_with_volume(closes, volumes)
         result = self.strategy.compute(df)
-        assert result["vol_confirmed"] == False
+        assert not result["vol_confirmed"]
 
     def test_vol_confirmed_true_when_above_threshold(self):
         closes  = [100.0] * WINDOW + [110.0]
         volumes = [1000]  * WINDOW + [2000]
         df = make_ohlcv_with_volume(closes, volumes)
         result = self.strategy.compute(df)
-        assert result["vol_confirmed"] == True
+        assert result["vol_confirmed"]
 
     def test_reference_window_excludes_current_bar(self):
         """
@@ -137,7 +138,7 @@ class TestVolumeBreakoutStrategy:
         volumes = [1000]  * WINDOW + [1600]   # 1.6x of 1000 = confirmed
         df = make_ohlcv_with_volume(closes, volumes)
         result = self.strategy.compute(df)
-        assert result["vol_confirmed"] == True
+        assert result["vol_confirmed"]
 
     def test_custom_window_and_multiplier(self):
         strategy = VolumeBreakoutStrategy(window=3, vol_mult=2.0)

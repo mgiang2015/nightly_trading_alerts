@@ -2,12 +2,12 @@
 tests/test_engine.py — Tests for EMACrossStrategy and compute_signals.
 """
 
-import pytest
-import pandas as pd
 import numpy as np
-from tests.conftest import make_ohlcv
-from signals.engine import EMACrossStrategy, compute_signals
+import pandas as pd
+import pytest
 
+from signals.engine import EMACrossStrategy, compute_signals
+from tests.conftest import make_ohlcv
 
 FAST, SLOW = 5, 10   # small periods so we need fewer rows in tests
 

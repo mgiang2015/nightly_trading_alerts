@@ -10,19 +10,15 @@ Results are printed to stdout. The equity curve is saved to backtest/results/.
 
 import os
 import sys
-import pandas as pd
 
-# Load watchlist from env
-from tickers import WATCHLIST
-
+from backtest.backtester import print_summary, run_backtest
 from data.fetcher import fetch_for_backtest
 from signals import (
     DailyReturnStrategy,
-    EMACrossStrategy,
-    VolumeBreakoutStrategy,
-    RSIDivergenceStrategy,
 )
-from backtest.backtester import run_backtest, print_summary
+
+# Load watchlist from env
+from tickers import WATCHLIST
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 
@@ -58,7 +54,7 @@ def main():
         sys.exit(1)
 
     # 2. Run backtest
-    print(f"\nRunning backtest...")
+    print("\nRunning backtest...")
     result = run_backtest(
         data=data,
         strategy=STRATEGY,

@@ -10,7 +10,9 @@ Supports two strategy interfaces:
 """
 
 import logging
+
 import pandas as pd
+
 from signals.base import BaseStrategy
 from signals.base_cross import BaseCrossStrategy
 from signals.ema_cross import EMACrossStrategy

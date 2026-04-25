@@ -6,6 +6,7 @@ We reload the tickers module inside each test so env var changes take effect.
 
 import importlib
 import os
+
 import pytest
 
 

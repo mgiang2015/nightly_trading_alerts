@@ -10,11 +10,12 @@ Design notes:
   sustained trend before the divergence setup.
 """
 
-import pytest
 import numpy as np
 import pandas as pd
-from tests.conftest import make_ohlcv
+import pytest
+
 from signals import RSIDivergenceStrategy
+from tests.conftest import make_ohlcv
 
 # Small periods so tests need ~60 bars rather than hundreds
 RSI_PERIOD   = 7
@@ -132,14 +133,14 @@ class TestRSIDivergenceStrategy:
         closes = list(range(100, 180))
         df = make_doji(closes)
         result = self.strategy.compute(df)
-        assert result["ema_rising"] == True
+        assert result["ema_rising"]
 
     def test_ema_falling_on_downtrend(self):
         """A sustained downtrend should produce a non-rising EMA flag."""
         closes = list(range(180, 100, -1))
         df = make_doji(closes)
         result = self.strategy.compute(df)
-        assert result["ema_rising"] == False
+        assert not result["ema_rising"]
 
     # ── HOLD when trend filter blocks signal ──────────────────────────────────
 

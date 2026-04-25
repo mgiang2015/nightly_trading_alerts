@@ -6,8 +6,9 @@ _fetch_ticker is excluded: it calls yfinance over the network.
 """
 
 import pandas as pd
+
+from data.fetcher import _load_from_db, _upsert
 from tests.conftest import make_ohlcv
-from data.fetcher import _upsert, _load_from_db
 
 
 class TestUpsert:

@@ -4,6 +4,7 @@ signals/ema_cross.py — Dual EMA crossover strategy.
 
 import pandas as pd
 import pandas_ta as ta
+
 from config import EMA_FAST, EMA_SLOW
 from signals.base import BaseStrategy
 

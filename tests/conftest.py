@@ -3,9 +3,10 @@ conftest.py — Shared fixtures for all tests.
 """
 
 import sqlite3
-import pytest
-import pandas as pd
+
 import numpy as np
+import pandas as pd
+import pytest
 
 
 def make_ohlcv(closes: list[float]) -> pd.DataFrame:

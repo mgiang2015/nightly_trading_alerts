@@ -14,13 +14,13 @@ use the correct dataset for each strategy.
 import logging
 from datetime import datetime
 
+from alerts.telegram_bot import send_summary
 from data.fetcher import fetch_all
 from signals import (
-    compute_signals,
-    EMACrossStrategy,
     DailyReturnStrategy,
+    EMACrossStrategy,
+    compute_signals,
 )
-from alerts.telegram_bot import send_summary
 from tickers import WATCHLIST
 
 logging.basicConfig(
