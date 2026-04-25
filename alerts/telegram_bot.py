@@ -5,10 +5,11 @@ python-telegram-bot v20+ is fully async. We wrap the send call in
 asyncio.run() so the rest of the pipeline stays synchronous.
 """
 
-import os
 import asyncio
 import logging
+import os
 from datetime import datetime
+
 import telegram
 
 log = logging.getLogger(__name__)
