@@ -119,3 +119,36 @@ def fetch_all(tickers: list[str], interval: str = "30m") -> dict[str, pd.DataFra
         print(f"  ✓ {ticker:12s} {len(result[ticker])} candles  ({interval})")
     conn.close()
     return result
+
+
+def fetch_for_backtest(tickers: list[str], period: str = "10y") -> dict[str, pd.DataFrame]:
+    """
+    Fetch daily OHLCV data for backtesting. Not stored in the live DB —
+    returned directly so backtests don't pollute the live prices cache.
+
+    period : yfinance period string — "5y" (default), "max", "2y", etc.
+             yfinance supports up to ~20 years of daily data for SGX stocks.
+    """
+    result = {}
+    print(f"Fetching backtest data ({period}, 1d) for {len(tickers)} tickers...")
+    for ticker in tickers:
+        try:
+            df = yf.download(
+                ticker,
+                period=period,
+                interval="1d",
+                progress=False,
+                auto_adjust=True,
+            )
+            if df.empty:
+                log.warning(f"No backtest data for {ticker}")
+                continue
+            df = df[["Open", "High", "Low", "Close", "Volume"]].copy()
+            df.columns = ["open", "high", "low", "close", "volume"]
+            df.index = pd.to_datetime(df.index, utc=True)
+            df.index.name = "datetime"
+            result[ticker] = df
+            print(f"  ✓ {ticker:12s} {len(df)} days")
+        except Exception as e:
+            log.error(f"Failed backtest fetch for {ticker}: {e}")
+    return result
