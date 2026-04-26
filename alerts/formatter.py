@@ -52,11 +52,36 @@ def _strategy_detail(s: dict) -> str:
 
 
 def _fundamental_line(s: dict) -> str | None:
-    """Return a caution line if the signal has fundamental flags, else None."""
-    if not s.get("fund_caution"):
+    """
+    Return a fundamental metrics line for any annotated signal.
+    Shows ⚠️ prefix with reasons when flagged, plain metrics when clean.
+    Returns None if the signal has no fundamental annotation.
+    """
+    if "fund_caution" not in s:
         return None
-    reasons = "  ".join(s.get("fund_reasons", []))
-    return f"    ⚠️ _{escape(reasons)}_"
+
+    parts = []
+    pb  = s.get("fund_pb")
+    div = s.get("fund_div")
+    de  = s.get("fund_de")
+
+    if pb is not None:
+        parts.append(escape(f"P/B {pb:.1f}x"))
+    if div is not None:
+        parts.append(escape(f"Div {div:.1f}%"))
+    if de is not None:
+        parts.append(escape(f"D/E {de:.2f}"))
+
+    if not parts:
+        return None
+
+    metrics = "  ".join(parts)
+
+    if s.get("fund_caution"):
+        reasons = "  ".join(s.get("fund_reasons", []))
+        return f"    ⚠️ _{escape(reasons)}_\n    _{metrics}_"
+    else:
+        return f"    _{metrics}_"
 
 
 def ticker_line(s: dict) -> str:

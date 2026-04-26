@@ -115,3 +115,70 @@ class TestFormatMessage:
         assert "AAA" in msg
         assert "BBB" in msg
         assert "CCC" not in msg
+
+
+# ── Fundamental line rendering ────────────────────────────────────────────────
+
+def _buy_with_clean_fundamentals(ticker="AAA"):
+    return {
+        "ticker": ticker, "signal": "BUY", "close": 1.23, "gap_pct": 0.45,
+        "fund_caution": False, "fund_reasons": [],
+        "fund_pb": 1.5, "fund_div": 5.0, "fund_de": 0.8,
+    }
+
+def _buy_with_flagged_fundamentals(ticker="BBB"):
+    return {
+        "ticker": ticker, "signal": "BUY", "close": 2.34, "gap_pct": 0.12,
+        "fund_caution": True,
+        "fund_reasons": ["P/B 4.2x > 3.0x (industrial)", "D/E 2.5 > 2.0 (industrial)"],
+        "fund_pb": 4.2, "fund_div": 3.0, "fund_de": 2.5,
+    }
+
+
+class TestFundamentalLineRendering:
+
+    STRATEGY_NAME = "Test strategy"
+
+    def test_clean_signal_shows_pb(self):
+        msg = format_message([_buy_with_clean_fundamentals()], self.STRATEGY_NAME)
+        assert "P/B" in msg
+        assert "✅" not in msg
+
+    def test_clean_signal_shows_div(self):
+        msg = format_message([_buy_with_clean_fundamentals()], self.STRATEGY_NAME)
+        assert "Div" in msg
+
+    def test_clean_signal_shows_de(self):
+        msg = format_message([_buy_with_clean_fundamentals()], self.STRATEGY_NAME)
+        assert "D/E" in msg
+
+    def test_flagged_signal_shows_warning(self):
+        msg = format_message([_buy_with_flagged_fundamentals()], self.STRATEGY_NAME)
+        assert "⚠️" in msg
+
+    def test_flagged_signal_shows_reasons(self):
+        msg = format_message([_buy_with_flagged_fundamentals()], self.STRATEGY_NAME)
+        assert "P/B" in msg
+
+    def test_flagged_signal_shows_metrics(self):
+        """Flagged signals should show both the reason and the raw metrics."""
+        msg = format_message([_buy_with_flagged_fundamentals()], self.STRATEGY_NAME)
+        assert "4\\.2" in msg   # pb_ratio escaped
+
+    def test_unannotated_signal_no_fundamental_line(self):
+        """Signals with no fund_caution key should show no fundamental line."""
+        msg = format_message([_buy_signal()], self.STRATEGY_NAME)
+        assert "✅" not in msg
+        assert "P/B" not in msg
+
+    def test_none_metrics_not_shown(self):
+        """Metrics that are None should be omitted from the line."""
+        signal = {
+            "ticker": "AAA", "signal": "BUY", "close": 1.0, "gap_pct": 0.1,
+            "fund_caution": False, "fund_reasons": [],
+            "fund_pb": 1.5, "fund_div": None, "fund_de": None,
+        }
+        msg = format_message([signal], self.STRATEGY_NAME)
+        assert "P/B" in msg
+        assert "Div" not in msg
+        assert "D/E" not in msg
