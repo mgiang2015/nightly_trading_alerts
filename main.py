@@ -14,13 +14,13 @@ use the correct dataset for each strategy.
 import logging
 from datetime import datetime
 
+from alerts import send_summary
 from data.fetcher import fetch_all
 from signals import (
-    compute_signals,
     DailyReturnStrategy,
+    compute_signals,
 )
 from signals.fundamental_filter import annotate_signals
-from alerts import send_summary
 from tickers import WATCHLIST
 
 logging.basicConfig(

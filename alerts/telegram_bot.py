@@ -8,7 +8,7 @@ continue to work without changes to main.py or tests.
 """
 
 from alerts.formatter import escape, format_message, strip_markdown
-from alerts.sender import send_summary, has_actionable_signals
+from alerts.sender import has_actionable_signals, send_summary
 
 __all__ = [
     "escape",

@@ -29,14 +29,14 @@ Supported metrics (all sourced from yfinance Ticker.info, no paid API needed)
     Debt-to-Equity (D/E)   — max_de threshold
 """
 
-import sqlite3
 import logging
+import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
 
 import yfinance as yf
 
-from config import FUND_THRESHOLDS, FUND_CACHE_DAYS
+from config import FUND_CACHE_DAYS, FUND_THRESHOLDS
 from tickers import SECTOR_MAP
 
 log = logging.getLogger(__name__)
@@ -101,6 +101,32 @@ def _save_cache(conn: sqlite3.Connection, ticker: str, data: dict):
     conn.commit()
 
 
+def _normalise_div_yield(raw: float | None) -> float | None:
+    """
+    Normalise yfinance dividendYield to a clean percentage value.
+
+    yfinance is inconsistent across tickers:
+      - Some return a fraction : 0.052  → we multiply by 100 → 5.2%
+      - Some return a percentage: 5.2   → already correct
+      - Some return large values: 200+  → data error, discard
+
+    Heuristic: if raw value is below 1.0, treat as fraction and multiply.
+    If between 1.0 and 30.0, treat as already a percentage (reasonable for
+    SGX stocks — even the highest-yielding REITs sit below 10%).
+    If above 30.0, treat as a data error and return None.
+    """
+    if raw is None:
+        return None
+    if raw < 1.0:
+        # Fraction form (most common): 0.052 → 5.2%
+        return round(raw * 100, 2)
+    if raw <= 30.0:
+        # Already a percentage: 5.2 → 5.2%
+        return round(raw, 2)
+    # Above 30% is implausible for an STI stock — discard as bad data
+    log.warning(f"Discarding implausible dividend yield: {raw}")
+    return None
+
 # ── Fetch from yfinance ───────────────────────────────────────────────────────
 
 def _fetch_fundamentals(ticker: str) -> dict:
@@ -109,18 +135,16 @@ def _fetch_fundamentals(ticker: str) -> dict:
     Returns a dict with None for any unavailable metric.
     """
     try:
-        info  = yf.Ticker(ticker).info
-        pb    = info.get("priceToBook")
-        div   = info.get("dividendYield")
-        de    = info.get("debtToEquity")
-        # yfinance returns dividendYield as a fraction (e.g. 0.04 = 4%)
-        div_pct = round(div * 100, 2) if div is not None else None
-        # D/E is sometimes expressed as a percentage (e.g. 45.3 = 0.453)
+        info = yf.Ticker(ticker).info
+        pb   = info.get("priceToBook")
+        div  = info.get("dividendYield")
+        de   = info.get("debtToEquity")
+        # D/E is sometimes expressed as a large percentage (e.g. 45.3 = 0.453x)
         if de is not None and de > 10:
             de = de / 100
         return {
             "pb_ratio":  round(pb, 2) if pb is not None else None,
-            "div_yield": div_pct,
+            "div_yield": _normalise_div_yield(div),
             "de_ratio":  round(de, 2) if de is not None else None,
         }
     except Exception as e:

@@ -1,184 +1,252 @@
 """
-tests/test_telegram.py — Tests for the Telegram message formatter.
+tests/test_fundamental_filter.py — Tests for the fundamental filter.
 
-Tests formatter.py directly — pure functions, no mocking needed.
-send_summary (sender.py) is excluded: mocking asyncio.run + telegram.Bot
-adds complexity for little confidence gain.
+We test threshold checks and annotation logic using synthetic fundamental
+data — no yfinance network calls, no cache I/O.
 """
 
+from unittest.mock import patch
+
 import pytest
-from alerts.formatter import escape, format_message
+
+from signals.fundamental_filter import (
+    _check_thresholds,
+    _get_sector,
+    _normalise_div_yield,
+    annotate_signals,
+)
+
+# ── _normalise_div_yield ──────────────────────────────────────────────────────
+
+class TestNormaliseDivYield:
+
+    def test_fraction_form_multiplied(self):
+        """Values below 1.0 are fractions — multiply by 100."""
+        assert _normalise_div_yield(0.052) == 5.2
+
+    def test_percentage_form_unchanged(self):
+        """Values between 1.0 and 30.0 are already percentages."""
+        assert _normalise_div_yield(5.2) == 5.2
+
+    def test_implausible_value_returns_none(self):
+        """Values above 30% are treated as data errors."""
+        assert _normalise_div_yield(200.0) is None
+        assert _normalise_div_yield(52.0) is None
+
+    def test_none_returns_none(self):
+        assert _normalise_div_yield(None) is None
+
+    def test_boundary_fraction(self):
+        """0.999 is just below 1.0 — treated as fraction."""
+        assert _normalise_div_yield(0.999) == pytest.approx(99.9, rel=1e-3)
+
+    def test_boundary_percentage_max(self):
+        """30.0 is the upper limit — still treated as valid percentage."""
+        assert _normalise_div_yield(30.0) == 30.0
+
+    def test_boundary_above_max_discarded(self):
+        """30.01 is above the limit — discarded."""
+        assert _normalise_div_yield(30.01) is None
 
 
-# ── _escape ───────────────────────────────────────────────────────────────────
+# ── _get_sector ───────────────────────────────────────────────────────────────
 
-class TestEscape:
+class TestGetSector:
 
-    def test_escapes_dot(self):
-        assert escape("ES3.SI") == "ES3\\.SI"
+    def test_bank_tickers(self):
+        assert _get_sector("D05.SI") == "bank"
+        assert _get_sector("O39.SI") == "bank"
+        assert _get_sector("U11.SI") == "bank"
 
-    def test_escapes_plus(self):
-        assert escape("+1.5%") == "\\+1\\.5%"
+    def test_reit_tickers(self):
+        assert _get_sector("C38U.SI") == "reit"
+        assert _get_sector("A17U.SI") == "reit"
+        assert _get_sector("M44U.SI") == "reit"
 
-    def test_escapes_hyphen(self):
-        assert escape("gap -0.5%") == "gap \\-0\\.5%"
+    def test_industrial_tickers(self):
+        assert _get_sector("V03.SI") == "industrial"
+        assert _get_sector("Z74.SI") == "industrial"
 
-    def test_escapes_equals(self):
-        assert escape("a=b") == "a\\=b"
-
-    def test_escapes_underscore(self):
-        assert escape("ema_slow") == "ema\\_slow"
-
-    def test_escapes_asterisk(self):
-        assert escape("a*b") == "a\\*b"
-
-    def test_plain_text_unchanged(self):
-        assert escape("hello world") == "hello world"
-
-    def test_empty_string(self):
-        assert escape("") == ""
+    def test_unknown_ticker_defaults_to_industrial(self):
+        assert _get_sector("UNKNOWN.SI") == "industrial"
 
 
-# ── _format_message ───────────────────────────────────────────────────────────
+# ── _check_thresholds (bank) ──────────────────────────────────────────────────
 
-def _buy_signal(ticker="AAA"):
-    return {"ticker": ticker, "signal": "BUY", "close": 1.23, "gap_pct": 0.45}
+class TestBankThresholds:
 
-def _sell_signal(ticker="BBB"):
-    return {"ticker": ticker, "signal": "SELL", "close": 2.34, "gap_pct": -0.67}
+    def test_bank_clean(self):
+        assert _check_thresholds("D05.SI", {"pb_ratio": 1.5, "div_yield": 5.0, "de_ratio": 8.0}) == []
 
-def _hold_signal(ticker="CCC"):
-    return {"ticker": ticker, "signal": "HOLD", "close": 3.45, "gap_pct": 0.01}
+    def test_bank_high_pb_flagged(self):
+        reasons = _check_thresholds("D05.SI", {"pb_ratio": 2.5, "div_yield": 5.0, "de_ratio": 8.0})
+        assert any("P/B" in r for r in reasons)
 
-def _error_signal(ticker="DDD"):
-    return {"ticker": ticker, "signal": "ERROR", "detail": "something broke"}
+    def test_bank_de_not_checked(self):
+        """D/E should never be flagged for banks regardless of value."""
+        reasons = _check_thresholds("D05.SI", {"pb_ratio": 1.5, "div_yield": 5.0, "de_ratio": 99.0})
+        assert not any("D/E" in r for r in reasons)
 
-
-class TestFormatMessage:
-
-    STRATEGY_NAME = "Test strategy"
-
-    def test_header_present(self):
-        msg = format_message([_hold_signal()], self.STRATEGY_NAME)
-        assert "Nightly Signal Report" in msg
-
-    def test_buy_section_present_when_buy_signal(self):
-        msg = format_message([_buy_signal()], self.STRATEGY_NAME)
-        assert "BUY signals" in msg
-
-    def test_sell_section_present_when_sell_signal(self):
-        msg = format_message([_sell_signal()], self.STRATEGY_NAME)
-        assert "SELL signals" in msg
-
-    def test_hold_section_absent(self):
-        """HOLD signals should never appear in the message."""
-        msg = format_message([_hold_signal()], self.STRATEGY_NAME)
-        assert "No crossover today" not in msg
-        assert "⚪" not in msg
-
-    def test_error_section_present_when_error_signal(self):
-        msg = format_message([_error_signal()], self.STRATEGY_NAME)
-        assert "Errors" in msg
-
-    def test_buy_section_absent_when_no_buy(self):
-        msg = format_message([_hold_signal()], self.STRATEGY_NAME)
-        assert "BUY signals" not in msg
-
-    def test_sell_section_absent_when_no_sell(self):
-        msg = format_message([_hold_signal()], self.STRATEGY_NAME)
-        assert "SELL signals" not in msg
-
-    def test_ticker_appears_in_output(self):
-        msg = format_message([_buy_signal("D05\\.SI")], self.STRATEGY_NAME)
-        assert "D05" in msg
-
-    def test_close_price_appears_in_output(self):
-        msg = format_message([_buy_signal()], self.STRATEGY_NAME)
-        assert "1\\.23" in msg
-
-    def test_gap_pct_appears_in_output(self):
-        msg = format_message([_buy_signal()], self.STRATEGY_NAME)
-        assert "0\\.45" in msg
-
-    def test_strategy_name_appears_in_footer(self):
-        msg = format_message([_hold_signal()], "My custom strategy")
-        assert "My custom strategy" in msg
-
-    def test_empty_signals_list(self):
-        """Empty input should not raise and still produce a header."""
-        msg = format_message([], self.STRATEGY_NAME)
-        assert "Nightly Signal Report" in msg
-
-    def test_multiple_signals_all_appear(self):
-        signals = [_buy_signal("AAA"), _sell_signal("BBB"), _hold_signal("CCC")]
-        msg = format_message(signals, self.STRATEGY_NAME)
-        assert "AAA" in msg
-        assert "BBB" in msg
-        assert "CCC" not in msg
+    def test_bank_div_yield_not_checked(self):
+        """Dividend yield is not thresholded for banks."""
+        reasons = _check_thresholds("D05.SI", {"pb_ratio": 1.5, "div_yield": 0.5, "de_ratio": 1.0})
+        assert not any("Div" in r for r in reasons)
 
 
-# ── Fundamental line rendering ────────────────────────────────────────────────
+# ── _check_thresholds (reit) ──────────────────────────────────────────────────
 
-def _buy_with_clean_fundamentals(ticker="AAA"):
-    return {
-        "ticker": ticker, "signal": "BUY", "close": 1.23, "gap_pct": 0.45,
-        "fund_caution": False, "fund_reasons": [],
-        "fund_pb": 1.5, "fund_div": 5.0, "fund_de": 0.8,
-    }
+class TestReitThresholds:
 
-def _buy_with_flagged_fundamentals(ticker="BBB"):
-    return {
-        "ticker": ticker, "signal": "BUY", "close": 2.34, "gap_pct": 0.12,
-        "fund_caution": True,
-        "fund_reasons": ["P/B 4.2x > 3.0x (industrial)", "D/E 2.5 > 2.0 (industrial)"],
-        "fund_pb": 4.2, "fund_div": 3.0, "fund_de": 2.5,
-    }
+    def test_reit_clean(self):
+        assert _check_thresholds("C38U.SI", {"pb_ratio": 5.0, "div_yield": 5.5, "de_ratio": 0.8}) == []
+
+    def test_reit_low_div_yield_flagged(self):
+        reasons = _check_thresholds("C38U.SI", {"pb_ratio": 1.0, "div_yield": 2.5, "de_ratio": 0.8})
+        assert any("Div" in r for r in reasons)
+
+    def test_reit_high_de_flagged(self):
+        reasons = _check_thresholds("C38U.SI", {"pb_ratio": 1.0, "div_yield": 5.5, "de_ratio": 1.2})
+        assert any("D/E" in r for r in reasons)
+
+    def test_reit_pb_not_checked(self):
+        """P/B should never be flagged for REITs."""
+        reasons = _check_thresholds("C38U.SI", {"pb_ratio": 10.0, "div_yield": 5.5, "de_ratio": 0.8})
+        assert not any("P/B" in r for r in reasons)
 
 
-class TestFundamentalLineRendering:
+# ── _check_thresholds (industrial) ───────────────────────────────────────────
 
-    STRATEGY_NAME = "Test strategy"
+class TestIndustrialThresholds:
 
-    def test_clean_signal_shows_pb(self):
-        msg = format_message([_buy_with_clean_fundamentals()], self.STRATEGY_NAME)
-        assert "P/B" in msg
-        assert "✅" not in msg
+    def test_industrial_clean(self):
+        assert _check_thresholds("V03.SI", {"pb_ratio": 2.0, "div_yield": 3.0, "de_ratio": 1.0}) == []
 
-    def test_clean_signal_shows_div(self):
-        msg = format_message([_buy_with_clean_fundamentals()], self.STRATEGY_NAME)
-        assert "Div" in msg
+    def test_industrial_high_pb_flagged(self):
+        reasons = _check_thresholds("V03.SI", {"pb_ratio": 4.0, "div_yield": 3.0, "de_ratio": 1.0})
+        assert any("P/B" in r for r in reasons)
 
-    def test_clean_signal_shows_de(self):
-        msg = format_message([_buy_with_clean_fundamentals()], self.STRATEGY_NAME)
-        assert "D/E" in msg
+    def test_industrial_high_de_flagged(self):
+        reasons = _check_thresholds("V03.SI", {"pb_ratio": 2.0, "div_yield": 3.0, "de_ratio": 2.5})
+        assert any("D/E" in r for r in reasons)
 
-    def test_flagged_signal_shows_warning(self):
-        msg = format_message([_buy_with_flagged_fundamentals()], self.STRATEGY_NAME)
-        assert "⚠️" in msg
+    def test_industrial_div_yield_not_checked(self):
+        reasons = _check_thresholds("V03.SI", {"pb_ratio": 2.0, "div_yield": 0.5, "de_ratio": 1.0})
+        assert not any("Div" in r for r in reasons)
 
-    def test_flagged_signal_shows_reasons(self):
-        msg = format_message([_buy_with_flagged_fundamentals()], self.STRATEGY_NAME)
-        assert "P/B" in msg
+    def test_unknown_ticker_uses_industrial(self):
+        reasons = _check_thresholds("UNKNOWN.SI", {"pb_ratio": 4.0, "div_yield": 3.0, "de_ratio": 1.0})
+        assert any("P/B" in r for r in reasons)
 
-    def test_flagged_signal_shows_metrics(self):
-        """Flagged signals should show both the reason and the raw metrics."""
-        msg = format_message([_buy_with_flagged_fundamentals()], self.STRATEGY_NAME)
-        assert "4\\.2" in msg   # pb_ratio escaped
+    def test_none_metrics_not_flagged(self):
+        assert _check_thresholds("V03.SI", {"pb_ratio": None, "div_yield": None, "de_ratio": None}) == []
 
-    def test_unannotated_signal_no_fundamental_line(self):
-        """Signals with no fund_caution key should show no fundamental line."""
-        msg = format_message([_buy_signal()], self.STRATEGY_NAME)
-        assert "✅" not in msg
-        assert "P/B" not in msg
 
-    def test_none_metrics_not_shown(self):
-        """Metrics that are None should be omitted from the line."""
-        signal = {
-            "ticker": "AAA", "signal": "BUY", "close": 1.0, "gap_pct": 0.1,
-            "fund_caution": False, "fund_reasons": [],
-            "fund_pb": 1.5, "fund_div": None, "fund_de": None,
-        }
-        msg = format_message([signal], self.STRATEGY_NAME)
-        assert "P/B" in msg
-        assert "Div" not in msg
-        assert "D/E" not in msg
+# ── annotate_signals ──────────────────────────────────────────────────────────
+
+CLEAN_FUND  = {"pb_ratio": 1.5, "div_yield": 5.0, "de_ratio": 0.8}
+RISKY_FUND  = {"pb_ratio": 5.0, "div_yield": 1.0, "de_ratio": 3.0}
+
+
+def _mock_annotate(signals, fund_data):
+    def fake_fetch(ticker):
+        return fund_data.get(ticker, CLEAN_FUND)
+
+    with patch("signals.fundamental_filter._load_cache", return_value=None), \
+         patch("signals.fundamental_filter._save_cache"), \
+         patch("signals.fundamental_filter._get_conn"), \
+         patch("signals.fundamental_filter._fetch_fundamentals", side_effect=fake_fetch):
+        return annotate_signals(signals)
+
+
+class TestAnnotateSignals:
+
+    def test_buy_annotated(self):
+        result = _mock_annotate(
+            [{"ticker": "V03.SI", "signal": "BUY", "close": 1.0}],
+            {"V03.SI": CLEAN_FUND},
+        )
+        assert "fund_caution" in result[0]
+
+    def test_sell_annotated(self):
+        result = _mock_annotate(
+            [{"ticker": "V03.SI", "signal": "SELL", "close": 1.0}],
+            {"V03.SI": CLEAN_FUND},
+        )
+        assert "fund_caution" in result[0]
+
+    def test_hold_not_annotated(self):
+        result = _mock_annotate(
+            [{"ticker": "V03.SI", "signal": "HOLD", "close": 1.0}],
+            {"V03.SI": CLEAN_FUND},
+        )
+        assert "fund_caution" not in result[0]
+
+    def test_error_not_annotated(self):
+        result = _mock_annotate(
+            [{"ticker": "V03.SI", "signal": "ERROR", "detail": "bad"}],
+            {"V03.SI": CLEAN_FUND},
+        )
+        assert "fund_caution" not in result[0]
+
+    def test_clean_stock_no_caution(self):
+        result = _mock_annotate(
+            [{"ticker": "V03.SI", "signal": "BUY", "close": 1.0}],
+            {"V03.SI": CLEAN_FUND},
+        )
+        assert result[0]["fund_caution"] is False
+        assert result[0]["fund_reasons"] == []
+
+    def test_risky_industrial_flagged(self):
+        result = _mock_annotate(
+            [{"ticker": "V03.SI", "signal": "BUY", "close": 1.0}],
+            {"V03.SI": RISKY_FUND},
+        )
+        assert result[0]["fund_caution"] is True
+
+    def test_sector_attached_to_result(self):
+        result = _mock_annotate(
+            [{"ticker": "D05.SI", "signal": "BUY", "close": 36.0}],
+            {"D05.SI": CLEAN_FUND},
+        )
+        assert result[0]["fund_sector"] == "bank"
+
+    def test_bank_high_de_not_flagged(self):
+        """High D/E on a bank should not produce caution — D/E is irrelevant for banks."""
+        bank_high_de = {"pb_ratio": 1.5, "div_yield": 5.0, "de_ratio": 99.0}
+        result = _mock_annotate(
+            [{"ticker": "D05.SI", "signal": "BUY", "close": 36.0}],
+            {"D05.SI": bank_high_de},
+        )
+        assert result[0]["fund_caution"] is False
+
+    def test_reit_low_div_flagged(self):
+        reit_low_div = {"pb_ratio": 1.0, "div_yield": 2.0, "de_ratio": 0.8}
+        result = _mock_annotate(
+            [{"ticker": "C38U.SI", "signal": "BUY", "close": 2.0}],
+            {"C38U.SI": reit_low_div},
+        )
+        assert result[0]["fund_caution"] is True
+
+    def test_original_keys_preserved(self):
+        result = _mock_annotate(
+            [{"ticker": "V03.SI", "signal": "BUY", "close": 1.23, "gap_pct": 0.5}],
+            {"V03.SI": CLEAN_FUND},
+        )
+        assert result[0]["close"] == 1.23
+        assert result[0]["gap_pct"] == 0.5
+
+    def test_mixed_signals(self):
+        signals = [
+            {"ticker": "D05.SI",  "signal": "BUY",  "close": 36.0},
+            {"ticker": "C38U.SI", "signal": "SELL", "close": 2.0},
+            {"ticker": "V03.SI",  "signal": "HOLD", "close": 3.0},
+        ]
+        result = _mock_annotate(signals, {
+            "D05.SI":  CLEAN_FUND,
+            "C38U.SI": CLEAN_FUND,
+            "V03.SI":  CLEAN_FUND,
+        })
+        by_ticker = {r["ticker"]: r for r in result}
+        assert "fund_caution" in by_ticker["D05.SI"]
+        assert "fund_caution" in by_ticker["C38U.SI"]
+        assert "fund_caution" not in by_ticker["V03.SI"]

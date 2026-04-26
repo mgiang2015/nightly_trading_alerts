@@ -6,7 +6,47 @@ data — no yfinance network calls, no cache I/O.
 """
 
 from unittest.mock import patch
-from signals.fundamental_filter import _check_thresholds, _get_sector, annotate_signals
+
+import pytest
+
+from signals.fundamental_filter import (
+    _check_thresholds,
+    _get_sector,
+    _normalise_div_yield,
+    annotate_signals,
+)
+
+# ── _normalise_div_yield ──────────────────────────────────────────────────────
+
+class TestNormaliseDivYield:
+
+    def test_fraction_form_multiplied(self):
+        """Values below 1.0 are fractions — multiply by 100."""
+        assert _normalise_div_yield(0.052) == 5.2
+
+    def test_percentage_form_unchanged(self):
+        """Values between 1.0 and 30.0 are already percentages."""
+        assert _normalise_div_yield(5.2) == 5.2
+
+    def test_implausible_value_returns_none(self):
+        """Values above 30% are treated as data errors."""
+        assert _normalise_div_yield(200.0) is None
+        assert _normalise_div_yield(52.0) is None
+
+    def test_none_returns_none(self):
+        assert _normalise_div_yield(None) is None
+
+    def test_boundary_fraction(self):
+        """0.999 is just below 1.0 — treated as fraction."""
+        assert _normalise_div_yield(0.999) == pytest.approx(99.9, rel=1e-3)
+
+    def test_boundary_percentage_max(self):
+        """30.0 is the upper limit — still treated as valid percentage."""
+        assert _normalise_div_yield(30.0) == 30.0
+
+    def test_boundary_above_max_discarded(self):
+        """30.01 is above the limit — discarded."""
+        assert _normalise_div_yield(30.01) is None
 
 
 # ── _get_sector ───────────────────────────────────────────────────────────────
