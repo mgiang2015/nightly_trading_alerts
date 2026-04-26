@@ -14,12 +14,13 @@ use the correct dataset for each strategy.
 import logging
 from datetime import datetime
 
-from alerts.telegram_bot import send_summary
 from data.fetcher import fetch_all
 from signals import (
-    DailyReturnStrategy,
     compute_signals,
+    DailyReturnStrategy,
 )
+from signals.fundamental_filter import annotate_signals
+from alerts import send_summary
 from tickers import WATCHLIST
 
 logging.basicConfig(
@@ -65,7 +66,14 @@ def run():
         all_results.append((results, name))
         strategy_names.append(name)
 
-    # 3. Send one Telegram alert per strategy
+    # 3. Annotate with fundamental quality flags
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Fetching fundamentals...")
+    all_results = [
+        (annotate_signals(results), name)
+        for results, name in all_results
+    ]
+
+    # 4. Send one Telegram alert per strategy
     print(f"[{datetime.now().strftime('%H:%M:%S')}] Sending alerts...")
     for results, name in all_results:
         send_summary(results, name)
