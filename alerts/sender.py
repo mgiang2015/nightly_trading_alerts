@@ -16,7 +16,7 @@ import os
 
 import telegram
 
-from alerts.formatter import format_message, strip_markdown
+from alerts.formatter import format_message, format_no_action, strip_markdown
 
 log = logging.getLogger(__name__)
 
@@ -39,11 +39,10 @@ def send_summary(signals: list[dict], strategy_name: str):
     Falls back to stdout if Telegram credentials are not configured.
     """
     if not has_actionable_signals(signals):
-        log.info(f"No actionable signals for {strategy_name} — skipping alert")
-        print(f"  — No actionable signals ({strategy_name}), alert skipped")
-        return
-
-    msg = format_message(signals, strategy_name)
+        log.info(f"No actionable signals for {strategy_name}")
+        msg = format_no_action(strategy_name)
+    else:
+        msg = format_message(signals, strategy_name)
 
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
         print("  ⚠️  Telegram not configured — printing report to stdout instead:\n")
