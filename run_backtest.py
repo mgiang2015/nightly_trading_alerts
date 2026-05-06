@@ -16,6 +16,7 @@ from tickers import WATCHLIST
 from data.fetcher import fetch_for_backtest
 from signals import (
     DailyReturnStrategy,
+    TrendFilteredDailyReturnStrategy,
     EMACrossStrategy,
     VolumeBreakoutStrategy,
     RSIDivergenceStrategy,
@@ -30,13 +31,13 @@ from backtest.backtester import (
 # ── Configuration ─────────────────────────────────────────────────────────────
 
 # Strategy to backtest
-STRATEGY = DailyReturnStrategy(top_n=3)
+STRATEGY = TrendFilteredDailyReturnStrategy(top_n=1, trend_window=50)
 
 # Tickers — defaults to full STI watchlist from .env
 TICKERS = WATCHLIST
 
 # Data period — "5y" for 5 years, "max" for full history
-PERIOD = "1y"
+PERIOD = "5y"
 
 # Starting capital in SGD
 INITIAL_CAPITAL = 10_000.0
@@ -51,7 +52,7 @@ COMMISSION = commission_fsmone
 #   1 = daily   — re-evaluate signals every trading day
 #   5 = weekly  — re-evaluate every 5 trading days (~Monday)
 #  21 = monthly — re-evaluate every ~21 trading days
-REBALANCE_EVERY = 1
+REBALANCE_EVERY = 5
 
 # ── Run ───────────────────────────────────────────────────────────────────────
 
