@@ -33,10 +33,10 @@ Metrics reported:
 
 import numpy as np
 import pandas as pd
-from signals.engine import compute_signals
+
 from signals.base import BaseStrategy
 from signals.base_cross import BaseCrossStrategy
-
+from signals.engine import compute_signals
 
 # ── Commission functions ──────────────────────────────────────────────────────
 

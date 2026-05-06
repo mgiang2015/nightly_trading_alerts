@@ -7,8 +7,8 @@ adds complexity for little confidence gain.
 """
 
 import pytest
-from alerts.formatter import escape, format_message, format_no_action
 
+from alerts.formatter import escape, format_message, format_no_action
 
 # ── _escape ───────────────────────────────────────────────────────────────────
 

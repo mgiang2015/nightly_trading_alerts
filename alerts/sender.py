@@ -10,9 +10,9 @@ sender_*.py module that imports from formatter.py and implements its own
 send_summary() signature.
 """
 
-import os
 import asyncio
 import logging
+import os
 
 import telegram
 

@@ -29,6 +29,7 @@ trend_window : SMA lookback in days (default 50). A close above the 50-day
 """
 
 import pandas as pd
+
 from config import CROSS_TOPN
 from signals.base_cross import BaseCrossStrategy
 

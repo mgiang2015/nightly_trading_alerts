@@ -11,22 +11,16 @@ Run twice with commission_fsmone and commission_zero to see the fee impact.
 import os
 import sys
 
-from tickers import WATCHLIST
-
+from backtest.backtester import (
+    commission_fsmone,
+    print_summary,
+    run_backtest,
+)
 from data.fetcher import fetch_for_backtest
 from signals import (
-    DailyReturnStrategy,
     TrendFilteredDailyReturnStrategy,
-    EMACrossStrategy,
-    VolumeBreakoutStrategy,
-    RSIDivergenceStrategy,
 )
-from backtest.backtester import (
-    run_backtest,
-    print_summary,
-    commission_fsmone,
-    commission_zero,
-)
+from tickers import WATCHLIST
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 
@@ -69,7 +63,7 @@ def main():
         print("ERROR: No data fetched. Check your internet connection and tickers.")
         sys.exit(1)
 
-    print(f"\nRunning backtest...")
+    print("\nRunning backtest...")
     result = run_backtest(
         data=data,
         strategy=STRATEGY,
