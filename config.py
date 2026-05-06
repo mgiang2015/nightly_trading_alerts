@@ -18,7 +18,7 @@ VOLUME_MULTIPLIER  = 1.5
 # ── Cross-sectional strategy settings ────────────────────────────────────────
 # CROSS_TOPN : number of top/bottom ranked tickers to flag as BUY/SELL.
 #              e.g. 3 means the 3 most oversold → BUY, 3 most overbought → SELL
-CROSS_TOPN = 3
+CROSS_TOPN = 1
 
 # ── Fundamental filter settings ──────────────────────────────────────────────
 # Fundamentals are fetched weekly and cached in SQLite.
