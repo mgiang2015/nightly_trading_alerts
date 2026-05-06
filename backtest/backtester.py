@@ -6,7 +6,7 @@ Design principles:
   - Long-only, equal position sizing
   - Signals generated fresh each bar using a rolling window to avoid look-ahead
   - Works with any BaseStrategy or BaseCrossStrategy via compute_signals()
-  - Pluggable commission function — defaults to FSMOne SGX fee structure (used by repo owner)
+  - Pluggable commission function — defaults to FSMOne SGX fee structure
   - Minimum position size guard prevents fee-eroding micro-trades
 
 Mechanics:
@@ -163,8 +163,10 @@ def run_backtest(
                     price = float(prior["close"].iloc[-1]) if not prior.empty else pos["entry_price"]
                 else:
                     price = float(today_rows["close"].iloc[0])
+                if price != price:
+                    price = pos["entry_price"]
                 holdings_value += price * pos["shares"]
-            total_equity = capital + holdings_value
+            total_equity = max(capital, 0.0) + holdings_value
             equity.append(total_equity)
             capital_deployed.append(
                 (holdings_value / total_equity * 100) if total_equity > 0 else 0.0
@@ -182,6 +184,8 @@ def run_backtest(
                 if today_rows.empty:
                     continue
                 exit_price  = float(today_rows["open"].iloc[0])
+                if exit_price != exit_price or exit_price <= 0:
+                    continue  # NaN or bad open — hold position, try again next bar
                 pos         = positions.pop(ticker)
                 proceeds    = exit_price * pos["shares"]
                 exit_comm   = commission_fn(proceeds)
@@ -222,7 +226,8 @@ def run_backtest(
                         skipped_trades += 1
                         continue
                     entry_price = float(today_rows["open"].iloc[0])
-                    if entry_price <= 0:
+                    if not entry_price or entry_price <= 0 or entry_price != entry_price:
+                        # entry_price != entry_price is True only for NaN
                         skipped_trades += 1
                         continue
                     shares      = capital_each / entry_price
@@ -246,9 +251,12 @@ def run_backtest(
                 price = float(prior["close"].iloc[-1]) if not prior.empty else pos["entry_price"]
             else:
                 price = float(today_rows["close"].iloc[0])
+            # Skip NaN prices — use last known entry price as fallback
+            if price != price:
+                price = pos["entry_price"]
             holdings_value += price * pos["shares"]
 
-        total_equity = capital + holdings_value
+        total_equity = max(capital, 0.0) + holdings_value
         equity.append(total_equity)
         capital_deployed.append(
             (holdings_value / total_equity * 100) if total_equity > 0 else 0.0
@@ -259,6 +267,8 @@ def run_backtest(
     for ticker, pos in positions.items():
         last_rows  = data[ticker][data[ticker].index <= last_date]
         exit_price = float(last_rows["close"].iloc[-1]) if not last_rows.empty else pos["entry_price"]
+        if exit_price != exit_price or exit_price <= 0:
+            exit_price = pos["entry_price"]   # fall back to entry price if close is bad
         proceeds   = exit_price * pos["shares"]
         exit_comm  = commission_fn(proceeds)
         pnl_gross  = (exit_price - pos["entry_price"]) * pos["shares"]
