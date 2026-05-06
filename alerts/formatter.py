@@ -136,3 +136,16 @@ def strip_markdown(text: str) -> str:
     for ch in r"*_`\\":
         text = text.replace(ch, "")
     return text
+
+
+def format_no_action(strategy_name: str) -> str:
+    """Build a 'no action' message for nights with no actionable signals."""
+    now = datetime.now().strftime("%d %b %Y, %H:%M SGT")
+    return "\n".join([
+        "📊 *Nightly Signal Report*",
+        f"_{escape(now)}_",
+        "",
+        "⚪ No actionable signals tonight\\.",
+        "─────────────────",
+        f"_{escape(strategy_name)}_",
+    ])
