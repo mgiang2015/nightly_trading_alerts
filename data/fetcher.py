@@ -23,6 +23,7 @@ DB_PATH = Path(__file__).parent.parent / "data" / "prices.db"
 INTERVALS = {
     "30m": {"period": "60d"},
     "1d":  {"period": "2y"},
+    "1w": {"period": "5y"},
 }
 
 
