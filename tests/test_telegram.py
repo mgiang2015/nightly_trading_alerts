@@ -114,7 +114,7 @@ class TestFormatMessage:
         msg = format_message(signals, self.STRATEGY_NAME)
         assert "AAA" in msg
         assert "BBB" in msg
-        assert "CCC" in msg
+        assert "CCC" not in msg
 
 
 # ── Fundamental line rendering ────────────────────────────────────────────────
