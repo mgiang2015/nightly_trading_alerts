@@ -17,7 +17,7 @@ from datetime import datetime
 from alerts import send_summary
 from data.fetcher import fetch_all
 from signals import (
-    TrendFilteredDailyReturnStrategy,
+    DailyReturnStrategy,
     compute_signals,
 )
 from signals.fundamental_filter import annotate_signals
@@ -37,7 +37,7 @@ log = logging.getLogger(__name__)
 #   interval "1d"  → daily candles    (Daily Return, KCP, Williams %R)
 
 STRATEGIES = [
-    (TrendFilteredDailyReturnStrategy(), "1w"),
+    (DailyReturnStrategy(), "1d"),
 ]
 
 
